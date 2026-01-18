@@ -58,7 +58,7 @@ class ProgrammingFragment : AbstractMainFragment() {
                             R.string.dialog_title_no_libre1,
                             R.string.message_no_libre1
                         )
-                        return@launch
+                        // return@launch
                     }
                     if (programKey <= Util.libreRuntime) {
                         Util.showInfoDialog(
@@ -66,7 +66,7 @@ class ProgrammingFragment : AbstractMainFragment() {
                             R.string.dialog_title_libre1_running,
                             R.string.message_libre1_running
                         )
-                        return@launch
+                        // return@launch
                     }
                     if (programKey >= floor(2.0.pow(15.0))) {
                         val msg = if (programKey == Util.thermometerProgramKey) {
