@@ -3,7 +3,7 @@ name: Build Lazarus APK
 on:
   push:
     branches: [ "master", "main" ]
-  workflow_dispatch: # Allows you to click a button to start the build manually
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,18 +12,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: set up JDK 17
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug
+    
+    # Debug step: Lists files so we can see if the project is in a subfolder
+    - name: List files in root
+      run: ls -R
+      
+    - name: Build with Gradle (System)
+      # We use 'gradle' instead of './gradlew' to avoid the missing file error
+      run: gradle assembleDebug --no-daemon
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
