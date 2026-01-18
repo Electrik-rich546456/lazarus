@@ -8,6 +8,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    # CRITICAL FIX: This tells the server to enter the 'android' folder first
+    defaults:
+      run:
+        working-directory: ./android
 
     steps:
     - uses: actions/checkout@v4
@@ -17,17 +22,21 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-    
-    # Debug step: Lists files so we can see if the project is in a subfolder
-    - name: List files in root
-      run: ls -R
-      
-    - name: Build with Gradle (System)
-      # We use 'gradle' instead of './gradlew' to avoid the missing file error
-      run: gradle assembleDebug --no-daemon
+        cache: gradle
+
+    # Debug: Confirm we are in the right place and gradlew exists
+    - name: Check Folder Contents
+      run: ls -la
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: Lazarus-Debug-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
+        # Note: The path is relative to the root, so we include 'android/' here
+        path: android/app/build/outputs/apk/debug/app-debug.apk
