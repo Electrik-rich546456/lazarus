@@ -122,7 +122,7 @@ class TemperatureFragment : AbstractMainFragment() {
                             R.string.dialog_title_no_libre1,
                             R.string.message_no_libre1
                         )
-                        return@launch
+                        // return@launch
                     }
                     when {
                         programKey <  2.0.pow(15.0) -> {
