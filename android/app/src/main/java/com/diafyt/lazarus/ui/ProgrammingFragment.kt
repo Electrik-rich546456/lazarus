@@ -92,7 +92,7 @@ class ProgrammingFragment : AbstractMainFragment() {
                             show()
                         }
                     } else {
-                        programTag(tag, true)
+                        programTag(tag, false)
                     }
                 }
             } finally {

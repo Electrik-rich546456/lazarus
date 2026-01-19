@@ -12,7 +12,7 @@ object NFCUtil {
     /**
      * Libre 2 Unlock Sequence (The "Magic Key")
      */
-    private suspend fun unlockLibre2(tag: Tag) {
+    suspend fun unlockLibre2(tag: Tag) {
         // Flags: 0x02 (High Data Rate), Command: 0xA0 (Custom), Manufacturer: 0x07 (TI)
         // Magic Key: C2 AD 75 21
         val unlockCmd = byteArrayOf(

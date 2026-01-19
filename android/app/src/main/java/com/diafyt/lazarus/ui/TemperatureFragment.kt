@@ -124,8 +124,12 @@ class TemperatureFragment : AbstractMainFragment() {
                         )
                         // return@launch
                     }
-                    when {
-                        programKey <  2.0.pow(15.0) -> {
+                    // If it's a Libre 2 (null) OR it's already a flashed thermometer, just read it!
+                    if (programKey == null || programKey == Util.thermometerProgramKey) {
+                        readTag(tag)
+                    } else {
+                        // Keep the original tutorial check for actual Libre 1s
+                        if (programKey < 2.0.pow(15.0)) {
                             AlertDialog.Builder(it).apply {
                                 setNegativeButton(R.string.button_title_no) { _, _ -> }
                                 setPositiveButton(R.string.button_title_go_to_tutorial) { _, _ ->
@@ -136,16 +140,6 @@ class TemperatureFragment : AbstractMainFragment() {
                                 setMessage(R.string.message_programmable_sensor)
                                 show()
                             }
-                        }
-                        programKey != Util.thermometerProgramKey -> {
-                            Util.showInfoDialog(
-                                it,
-                                R.string.dialog_title_no_thermometer,
-                                R.string.message_no_thermometer
-                            )
-                        }
-                        else -> {
-                            readTag(tag)
                         }
                     }
                 }
@@ -184,6 +178,11 @@ class TemperatureFragment : AbstractMainFragment() {
      */
     private suspend fun readTag(tag: Tag) {
         Log.i(javaClass.name, "Retrieving temperature reading.")
+        val unlockCmd = byteArrayOf(
+            0x02.toByte(), 0xA0.toByte(), 0x07.toByte(),
+            0xC2.toByte(), 0xAD.toByte(), 0x75.toByte(), 0x21.toByte()
+        )
+        AsyncNFCTask(tag).asyncRun(unlockCmd)
         val cmd = byteArrayOf(
             0x02, // flags: high data rate mode
             0xB3.toByte(), // unlock blocks
