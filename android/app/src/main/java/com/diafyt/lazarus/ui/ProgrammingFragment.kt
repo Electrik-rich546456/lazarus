@@ -40,36 +40,23 @@ class ProgrammingFragment : AbstractMainFragment() {
 
     override fun handleNfc(tag: Tag) {
         if (job != null) {
-            Util.showInfoSnack(
-                view,
-                R.string.snackbar_programming_overlap
-            )
+            Util.showInfoSnack(view, R.string.snackbar_programming_overlap)
             return
         }
         job = viewLifecycleOwner.lifecycleScope.launch {
             progressBar.visibility = View.VISIBLE
             try {
-                activity?.let {
-                    val programKey =
-                        Util.retrieveProgramKey(tag)
+                activity?.let { it ->
+                    val programKey = Util.retrieveProgramKey(tag)
+                    
                     if (programKey == null) {
-                        Util.showInfoDialog(
-                            it,
-                            R.string.dialog_title_no_libre1,
-                            R.string.message_no_libre1
-                        )
-                        // return@launch
-                    }
-                    // 1. If it's a Libre 2 (null), skip the checks and just flash it!
-                    if (programKey == null) {
+                        Util.showInfoDialog(it, R.string.dialog_title_no_libre1, R.string.message_no_libre1)
                         programTag(tag, false)
                     } else {
-                        // 2. Only do these checks if programKey is NOT null
                         if (programKey <= Util.libreRuntime) {
                             Util.showInfoDialog(it, R.string.dialog_title_libre1_running, R.string.message_libre1_running)
-                            // return@launch
                         }
-                    
+
                         if (programKey >= floor(2.0.pow(15.0))) {
                             val msg = if (programKey == Util.thermometerProgramKey) {
                                 R.string.message_confirm_self_overwrite
@@ -96,26 +83,6 @@ class ProgrammingFragment : AbstractMainFragment() {
                         } else {
                             programTag(tag, false)
                         }
-                    }                        
-                        AlertDialog.Builder(it).apply {
-                            setNegativeButton(R.string.button_title_no) { _, _ -> }
-                            setPositiveButton(R.string.button_title_yes) { _, _ ->
-                                job = viewLifecycleOwner.lifecycleScope.launch {
-                                    progressBar.visibility = View.VISIBLE
-                                    try {
-                                        programTag(tag, false)
-                                    } finally {
-                                        progressBar.visibility = View.INVISIBLE
-                                        job = null
-                                    }
-                                }
-                            }
-                            setTitle(getString(R.string.dialog_title_confirm_overwrite))
-                            setMessage(msg)
-                            show()
-                        }
-                    } else {
-                        programTag(tag, false)
                     }
                 }
             } finally {
@@ -147,15 +114,9 @@ class ProgrammingFragment : AbstractMainFragment() {
         }
 
         if (success) {
-            Util.showInfoSnack(
-                view,
-                R.string.snackbar_programming_successful
-            )
+            Util.showInfoSnack(view, R.string.snackbar_programming_successful)
         } else {
-            Util.showInfoSnack(
-                view,
-                R.string.snackbar_programming_error
-            )
+            Util.showInfoSnack(view, R.string.snackbar_programming_error)
         }
         Log.i(javaClass.name, "Tag programming complete.")
     }
@@ -170,4 +131,3 @@ class ProgrammingFragment : AbstractMainFragment() {
         return null
     }
 }
-
