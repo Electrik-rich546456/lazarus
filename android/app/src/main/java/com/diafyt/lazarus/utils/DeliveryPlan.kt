@@ -69,7 +69,7 @@ class DeliveryPlan(private val instructions: List<Instruction>) {
                     }
                     if (type != null) {
                         val block = parts[1].toInt(16).toByte()
-                        val data = if (parts.size > 2) Util.hexToBytes(parts[2]) else byteArrayOf()
+                        val data = if (parts.size > 2) Util.hexToBytes(parts[2]) ?: byteArrayOf() else byteArrayOf()
                         instructions.add(Instruction(type, block, data))
                     }
                 }
