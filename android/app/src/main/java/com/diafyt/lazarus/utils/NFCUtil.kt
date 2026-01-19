@@ -2,123 +2,81 @@ package com.diafyt.lazarus.utils
 
 import android.nfc.Tag
 import android.nfc.tech.NfcV
+import android.util.Log
 
 /**
- * Provide easy to use NFC commands with Libre 2 support.
+ * Enhanced NFC utility with Libre 2 "OpenFreeStyle" Unlock Support.
  */
 object NFCUtil {
     private const val blocklen = 8
+    private const val TAG = "NFCUtil-Lazarus"
 
     /**
-     * Libre 2 Unlock Sequence (The "Magic Key")
+     * Libre 2 Custom Unlock (Command A0)
+     * This is the "Magic Key" sequence used in OpenFreeStyle to permit writes.
      */
-    suspend fun unlockLibre2(tag: Tag) {
-        // Flags: 0x02 (High Data Rate), Command: 0xA0 (Custom), Manufacturer: 0x07 (TI)
-        // Magic Key: C2 AD 75 21
+    suspend fun unlockLibre2(tag: Tag): Boolean {
+        val nfc = NfcV.get(tag)
+        if (!nfc.isConnected) nfc.connect()
+
+        // OpenFreeStyle Magic: Flags 0x02, Cmd 0xA0, Mfg 0x07, Key C2AD7521
         val unlockCmd = byteArrayOf(
             0x02.toByte(), 0xA0.toByte(), 0x07.toByte(),
             0xC2.toByte(), 0xAD.toByte(), 0x75.toByte(), 0x21.toByte()
         )
-        // We send the unlock but don't worry if it fails (might be a Libre 1)
-        AsyncNFCTask(tag).asyncRun(unlockCmd)
+
+        return try {
+            val resp = nfc.transceive(unlockCmd)
+            // Success if response starts with 0x00 (No Error)
+            resp.isNotEmpty() && resp[0] == 0.toByte()
+        } catch (e: Exception) {
+            Log.e(TAG, "Unlock failed: ${e.message}")
+            false
+        }
     }
 
     /**
-     * Write a single block via the corresponding NFC command.
+     * Write a single block using the Libre 2 specific handshake.
      */
     suspend fun writeBlock(tag: Tag, pos: Byte, data: ByteArray): ByteArray? {
-        if (data.size != blocklen) {
-            throw RuntimeException("Wrong size of payload (must be $blocklen bytes).")
-        }
+        if (data.size != blocklen) throw RuntimeException("Payload must be $blocklen bytes.")
 
-        // 1. Send the Unlock handshake for Libre 2
+        // 1. Establish the Secure Session (Libre 2 requirement)
         unlockLibre2(tag)
 
-        // 2. Prepare the actual write command
-        val cmd = byteArrayOf(
-            0x22, // flags: addressed (= UID field present) and high data rate mode
-            0x21, // write single block
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // placeholder for tag UID
-            pos
-        ) + data
-        System.arraycopy(tag.id, 0, cmd, 2, 8)
+        // 2. Build the Write Command (Command 0x21)
+        // Flag 0x22 = Addressed mode (UID included)
+        val cmd = byteArrayOf(0x22, 0x21) + 
+                  tag.id + // 8-byte UID
+                  pos +    // block index
+                  data     // 8-bytes data
 
-        // 3. Execute the write
-        AsyncNFCTask(tag).asyncRun(cmd)?.let {
-            return checkError(it)
-        }
-        return null
+        return AsyncNFCTask(tag).asyncRun(cmd)?.let { checkError(it) }
     }
 
     /**
-     * Write multiple blocks via the corresponding NFC command.
+     * Write multiple blocks (Command 0x24)
      */
     suspend fun writeMultipleBlocks(tag: Tag, pos: Byte, data: ByteArray): ByteArray? {
-        if (data.size < blocklen || data.size % blocklen != 0) {
-            throw RuntimeException("Wrong size of payload (must be divisible by $blocklen bytes).")
-        }
+        if (data.size % blocklen != 0) throw RuntimeException("Payload size error.")
 
-        // 1. Send the Unlock handshake for Libre 2
         unlockLibre2(tag)
 
-        val cmd = byteArrayOf(
-            0x22, // flags: addressed (= UID field present) and high data rate mode
-            0x24, // write multiple blocks
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // placeholder for tag UID
-            pos,
-            (data.size / blocklen - 1).toByte()
-        ) + data
-        System.arraycopy(tag.id, 0, cmd, 2, 8)
+        val cmd = byteArrayOf(0x22, 0x24) + 
+                  tag.id + 
+                  pos + 
+                  (data.size / blocklen - 1).toByte() + 
+                  data
 
-        AsyncNFCTask(tag).asyncRun(cmd)?.let {
-            return checkError(it)
-        }
-        return null
+        return AsyncNFCTask(tag).asyncRun(cmd)?.let { checkError(it) }
     }
 
-    /**
-     * Read a single block via the corresponding NFC command.
-     */
     suspend fun readBlock(tag: Tag, pos: Byte): ByteArray? {
-        // Unlock first for reading too
         unlockLibre2(tag)
-
-        val cmd = byteArrayOf(
-             0x22, // flags: addressed (= UID field present) and high data rate mode
-             0x20, // read single block
-             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // placeholder for tag UID
-             pos)
-        System.arraycopy(tag.id, 0, cmd, 2, 8)
-        AsyncNFCTask(tag).asyncRun(cmd)?.let {
-            return checkError(it)
-        }
-        return null
+        val cmd = byteArrayOf(0x22, 0x20) + tag.id + pos
+        return AsyncNFCTask(tag).asyncRun(cmd)?.let { checkError(it) }
     }
 
-    /**
-     * Read multiple blocks via the corresponding NFC command.
-     */
-    suspend fun readMultipleBlocks(tag: Tag, pos: Byte, count: Byte): ByteArray? {
-        // Unlock first
-        unlockLibre2(tag)
-
-        val cmd = byteArrayOf(
-            0x22, // flags: addressed (= UID field present) and high data rate mode
-            0x23, // read multiple blocks
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // placeholder for tag UID
-            pos,
-            (count - 1).toByte()
-        )
-        System.arraycopy(tag.id, 0, cmd, 2, 8)
-        AsyncNFCTask(tag).asyncRun(cmd)?.let {
-            return checkError(it)
-        }
-        return null
-    }
-
-    /**
-     * Check the status flags of a raw NFC response.
-     */
     fun checkError(msg: ByteArray): ByteArray? {
         if (msg.isNotEmpty() && msg[0] == 0.toByte()) {
             return msg.sliceArray(1 until msg.size)
