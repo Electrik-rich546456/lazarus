@@ -122,7 +122,7 @@ object Util {
             // wrong manufacturer
             return null
         }
-        val header = NFCUtil.readMultipleBlocks(tag, 0, 3) ?: return null
+        val header = NFCUtil.readBlock(tag, 0.toByte()) ?: return null
         val storedChecksum = littleEndianDecode(
             header.sliceArray(0 until 2)
         ).toShort()
