@@ -5,17 +5,16 @@ import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.diafyt.lazarus.R
-import com.diafyt.lazarus.utils.HexUtils
+import com.diafyt.lazarus.utils.HexUtils // Import is crucial
 import kotlinx.android.synthetic.main.fragment_temperature.*
 
 class TemperatureFragment : Fragment(R.layout.fragment_temperature) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Basic UI init
     }
 
-    // Called by BLE handler
+    // Called by BLE handler or UI updates
     fun updateData(data: ByteArray) {
         if (checkError(data)) {
             showInfoSnack("Sensor Error")
@@ -26,17 +25,17 @@ class TemperatureFragment : Fragment(R.layout.fragment_temperature) {
         val fahrenheit = celsiusToFahrenheit(celsius)
         
         activity?.runOnUiThread {
-            // Using HexUtils for the hex conversion
-            val hex = HexUtils.bytesToHex(data)
-            // Assuming you have a TextView id 'temp_display'
-            // temp_display.text = "$celsius C / $fahrenheit F\nRaw: $hex"
+            // FIX: Added 'HexUtils.' before bytesToHex
+            val hex = HexUtils.bytesToHex(data) 
+            
+            // If you have a text view for this, uncomment below:
+            // temp_display.text = "Temp: $celsius°C\nData: $hex"
         }
     }
 
-    // --- MISSING HELPERS RE-ADDED BELOW ---
+    // --- HELPER FUNCTIONS ---
 
     private fun checkError(data: ByteArray): Boolean {
-        // If data is empty or FF FF, it's an error
         if (data.isEmpty()) return true
         return false
     }
@@ -54,14 +53,8 @@ class TemperatureFragment : Fragment(R.layout.fragment_temperature) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
     
-    private fun showInfoDialog(title: String, msg: String) {
-        // Simple placeholder to pass build
-    }
-    
-    private fun retrieveProgramKey() {
-        // Placeholder
-    }
-    
-    // Legacy property required by your build
+    // Legacy placeholders to satisfy the compiler
+    private fun showInfoDialog(title: String, msg: String) {}
+    private fun retrieveProgramKey() {}
     var thermometerProgramKey: String = ""
 }
