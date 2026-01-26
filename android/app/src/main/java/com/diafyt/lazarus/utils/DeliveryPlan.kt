@@ -7,6 +7,10 @@ object DeliveryPlan {
 
     fun getLazarusPayload(): Map<Int, ByteArray> {
         return mapOf(
+            // Block 03: Activation (Status Reset) - Move from "Expired" to "Active"
+            3 to byteArrayOf(0x01.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 
+                              0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte()),
+
             // Block 39: Signature that tells the app "I am a Lazarus Sensor"
             39 to byteArrayOf(0x01.toByte(), 0x80.toByte(), 0x00.toByte(), 0x00.toByte(), 
                                0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte()),
